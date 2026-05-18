@@ -1,0 +1,86 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: super-biz-agent-app
+    environment:
+      APP_NAME: SuperBizAgent
+      DEBUG: "True"
+      HOST: 0.0.0.0
+      PORT: "9900"
+      DASHSCOPE_API_KEY: ${DASHSCOPE_API_KEY:-}
+      DASHSCOPE_API_BASE: https://dashscope.aliyuncs.com/compatible-mode/v1
+      DASHSCOPE_MODEL: qwen-max
+      DASHSCOPE_EMBEDDING_MODEL: text-embedding-v4
+      MILVUS_HOST: standalone
+      MILVUS_PORT: "19530"
+      MILVUS_TIMEOUT: "10000"
+      RAG_TOP_K: "3"
+      RAG_RECALL_TOP_K: "10"
+      RAG_RERANK_TOP_K: "3"
+      RAG_RERANK_MODEL: qwen3-rerank
+      DASHSCOPE_RERANK_BASE_URL: https://dashscope.aliyuncs.com/compatible-api/v1
+      RAG_MODEL: qwen-max
+      CHUNK_MAX_SIZE: "800"
+      CHUNK_OVERLAP: "100"
+      CONVERSATION_CONTEXT_WINDOW_TOKENS: "32768"
+      CONVERSATION_COMPRESS_THRESHOLD_RATIO: "0.7"
+      CONVERSATION_SUMMARY_MAX_TOKENS: "1200"
+      CONVERSATION_COMPRESS_RECENT_MESSAGES: "6"
+      KNOWLEDGE_GRAPH_ENABLED: "true"
+      KNOWLEDGE_GRAPH_DB_PATH: data/knowledge_graph.db
+      KNOWLEDGE_GRAPH_EXTRACT_MODEL: qwen-turbo
+      KNOWLEDGE_GRAPH_MAX_CHUNK_CHARS: "3000"
+      QUERY_REWRITE_ENABLED: "true"
+      QUERY_REWRITE_MODEL: qwen-turbo
+      HYBRID_RETRIEVAL_ENABLED: "true"
+      KEYWORD_RETRIEVAL_ENABLED: "true"
+      GRAPH_RETRIEVAL_ENABLED: "true"
+      MULTI_QUERY_RETRIEVAL_ENABLED: "true"
+      KEYWORD_TOP_K: "10"
+      GRAPH_TOP_K: "10"
+      HYBRID_CANDIDATE_TOP_K: "20"
+      CHUNK_INDEX_DB_PATH: data/rag_chunks.db
+      MCP_CLS_TRANSPORT: streamable-http
+      MCP_CLS_URL: http://cls-mcp:8003/mcp
+      MCP_MONITOR_TRANSPORT: streamable-http
+      MCP_MONITOR_URL: http://monitor-mcp:8004/mcp
+    ports:
+      - "9900:9900"
+    volumes:
+      - ./logs:/app/logs
+      - ./uploads:/app/uploads
+      - ./aiops-docs:/app/aiops-docs
+      - ./data:/app/data
+    depends_on:
+      - cls-mcp
+      - monitor-mcp
+    networks:
+      - milvus
+
+  cls-mcp:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: cls-mcp
+    command: ["python", "mcp_servers/cls_server.py"]
+    ports:
+      - "8003:8003"
+    networks:
+      - milvus
+
+  monitor-mcp:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: monitor-mcp
+    command: ["python", "mcp_servers/monitor_server.py"]
+    ports:
+      - "8004:8004"
+    networks:
+      - milvus
+
+networks:
+  milvus:
+    external: true
