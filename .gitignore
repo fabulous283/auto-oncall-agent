@@ -42,6 +42,10 @@ poetry.lock
 # CodeBuddy
 .codebuddy/
 
+# Local notes and release drafts
+Question.md
+更新日志-*.md
+
 # Environment
 .env
 .env.local
